@@ -267,7 +267,7 @@ func (pp *RandomStringGenerator) Generate(str string) string {
 				}
 				if strings.Count(str, TOKEN_START) > 1 {
 					// there are nested tokens we need to solve first
-					str = fmt.Sprintf("[%s]", pp.Generate(str[1:len(str)-1]))
+					str = "[" + pp.Generate(str[1:len(str)-1]) + "]"
 					continue
 				}
 				// this should be the outer most token, so one last parser pass
