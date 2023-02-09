@@ -1,0 +1,6 @@
+This text loads content from 'data/hello': [:hello]
+This text loads content from 'data/bye': [:bye]
+This text loads content from a random file: [:[hello,bye]]
+You can use multiple tokens in one line: [:hello]! [:bye]!
+Tokens can be nested and used recursively, e.g. we can load from a random file using another file: [:[:random]]
+# Lines can be commented and will be ignored, just like blank lines
