@@ -241,14 +241,14 @@ Here the parsing order comes into play: the library parses inside-out, that is i
 There is no nesting depth limit which allows for limitless recursion if you may choose so. Feel free to find a hardware supplier for infinite memory then :P 
 
 #### Random Integer With Weight
-Some of you might have already been inspired to use this to generate integer ranges with different weights. For those who haven't, let me give you a nudge:
+Some of you might have already been inspired to use this to generate integers with different weights. For those who haven't, let me give you a nudge:
 ```sh
-./gsg "[[1..10],[1..10],[100..200]]"
-./gsg "[[1..10],[1..10],[100..200]]"
-./gsg "[[1..10],[1..10],[100..200]]"
-./gsg "[[1..10],[1..10],[100..200]]"
-./gsg "[[1..10],[1..10],[100..200]]"
-./gsg "[[1..10],[1..10],[100..200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
+./gsg "[[1-10],[1-10],[100-200]]"
 ```
 ```
 4
