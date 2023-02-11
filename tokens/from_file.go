@@ -18,7 +18,7 @@ func (t *TokenLineFromFile) Parse(dataDir string) string {
 	if err != nil {
 		return "" // silently ignore
 	}
-	if path == "" || path[0:3] == "../" {
+	if path == "" || (len(path) >= 3 && path[0:3] == "../") {
 		return ""
 	}
 
