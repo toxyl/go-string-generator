@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -202,26 +204,24 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 // Generate takes the input string and replaces all tokens
 // with randomly generated data. Tokens can be nested.
 //
-//
 // Available tokens:
 //
-//    [#UUID]   = random UUID (xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxx)
-//    [#56]     = random 56-characters hash
-//    [int:6]   = random 6-characters integer (zero-padded)
-//    [str:6]   = random 6-characters lowercase string (a-z)
-//    [strU:6]  = random 6-characters uppercase string (A-Z)
-//    [strR:6]  = random 6-characters mixed-case string (a-z, A-Z)
-//    [mix:6]   = random 6-characters lowercase alphanumeric string (a-z, 0-9)
-//    [mixU:6]  = random 6-characters uppercase alphanumeric string (A-Z, 0-9)
-//    [mixR:6]  = random 6-characters mixed-case alphanumeric string (a-z, A-Z, 0-9)
-//    [10-500]  = random value between 10 and 500 (inclusive)
-//    [10..500] = comma separated list with all ints from 10 to 500 (inclusive)
-//    [a,b,c]   = random value from the list
+//	[#UUID]   = random UUID (xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxx)
+//	[#56]     = random 56-characters hash
+//	[int:6]   = random 6-characters integer (zero-padded)
+//	[str:6]   = random 6-characters lowercase string (a-z)
+//	[strU:6]  = random 6-characters uppercase string (A-Z)
+//	[strR:6]  = random 6-characters mixed-case string (a-z, A-Z)
+//	[mix:6]   = random 6-characters lowercase alphanumeric string (a-z, 0-9)
+//	[mixU:6]  = random 6-characters uppercase alphanumeric string (A-Z, 0-9)
+//	[mixR:6]  = random 6-characters mixed-case alphanumeric string (a-z, A-Z, 0-9)
+//	[10-500]  = random value between 10 and 500 (inclusive)
+//	[10..500] = comma separated list with all ints from 10 to 500 (inclusive)
+//	[a,b,c]   = random value from the list
 //
-//    [b64:data] = base64-encodes 'data'
-//    [url:data] = url-encodes 'data'
-//    [:path]    = reads a random line from the given "path" (if path is a directory a random file from that directory will be used)
-//
+//	[b64:data] = base64-encodes 'data'
+//	[url:data] = url-encodes 'data'
+//	[:path]    = reads a random line from the given "path" (if path is a directory a random file from that directory will be used)
 func (pp *RandomStringGenerator) Generate(str string) string {
 	if str == "" {
 		return str
@@ -288,6 +288,22 @@ func NewRandomStringGenerator(dataDir string, fileCacheErrorHandler func(err err
 		DataDir: dataDir,
 	}
 	FilesCache = utils.NewFilesCache(rsg.DataDir, fileCacheErrorHandler)
+
+	return rsg
+}
+
+// NewRandomStringGeneratorSimple returns a generator that uses $HOME/.rsg-data as its data directory
+// and ignores file cache errors.
+func NewRandomStringGeneratorSimple() *RandomStringGenerator {
+	homedir, _ := os.UserHomeDir()
+	homedir = filepath.Join(homedir, ".rsg-data")
+	if err := os.MkdirAll(homedir, 0755); err != nil {
+		panic("could not create data dir (" + homedir + ")")
+	}
+	rsg := &RandomStringGenerator{
+		DataDir: homedir,
+	}
+	FilesCache = utils.NewFilesCache(rsg.DataDir, func(err error) { /* silently ignore errors */ })
 
 	return rsg
 }

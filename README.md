@@ -2,86 +2,28 @@
 ... is a library that generates random strings from patterns.
 
 ## Usage Example
-```golang
-// This is a simple application that generates one line per argument.
-// Each argument is parsed using the library and running the app
-// multiple times with the same arguments will yield different results,
-// except for the integer range token which will always produce the same
-// sequence.
-package main
-
-import (
-	"fmt"
-	"os"
-
-	gostringgenerator "github.com/toxyl/go-string-generator"
-)
-
-var (
-	gen = gostringgenerator.NewGenerator(
-		"example/data", // location of data files to use for the [:file] token
-		func(err error) { // function to handle errors reported by the file cache
-			fmt.Printf("Encountered file cache error: %s", err.Error())
-		},
-	)
-)
-
-func print(pattern ...string) {
-	for _, p := range pattern {
-		fmt.Printf("%s\n", gen.Generate(p))
-	}
-}
-
-func main() {
-	print(os.Args[1:]...)
-}
-
-```
-
-### For The Impatient
-Want to see a bunch of examples quickly? Add these functions to `example/main.go` and execute `printExamples()` in the `main()` function.
-```golang
-func printExample(title, pattern string, repeats int) {
-	fmt.Printf("%d %s\n", repeats, title)
-	for repeats > 0 {
-		print(pattern)
-		repeats--
-	}
-	fmt.Println("")
-}
-
-func printExamples() {
-	printExample("UUIDs", "[#UUID]", 10)
-	printExample("Hashes (length = 10)", "[#10]", 10)
-	printExample("Hashes (random length)", "[#[1-20]]", 10)
-	printExample("Integer From Range", "[1-10]", 10)
-	printExample("Integers (length = 10)", "[int:10]", 10)
-	printExample("Integers (random length)", "[int:[1-20]]", 10)
-	printExample("Strings (length = 10, lowercase)", "[str:10]", 10)
-	printExample("Strings (length = 10, uppercase)", "[strU:10]", 10)
-	printExample("Strings (length = 10, mixed case)", "[strR:10]", 10)
-	printExample("Alphanumerics (length = 10, lowercase)", "[mix:10]", 10)
-	printExample("Alphanumerics (length = 10, uppercase)", "[mixU:10]", 10)
-	printExample("Alphanumerics (length = 10, mixed case)", "[mixR:10]", 10)
-	printExample("List Of Integers", "[1..10]", 3)
-	printExample("Strings From List", "[a,b,c,1,2,3]", 10)
-	printExample("Strings From Random List", "[[str:1],[int:2],[mix:3]] - [#[[4..16],UUID]]", 10)
-	printExample("Base64-Encoded Strings", "[b64:[str:20]]", 10)
-	printExample("URL-Encoded Strings", "[url:[str:5]&[str:4]]", 10)
-	printExample("Random Lines From Files (loaded from the files in example/data)", "[:text.txt]", 10)
-}
+Check out `example/main.go` for a usage example and run it: 
+```sh
+go run example/main.go
 ```
 
 ## The Basics
 Let me guide you through a couple of examples, so you know the basics. And then we'll get to [The Cool Stuff](#the-cool-stuff).
 
-### Building The Example Application
+### Building The Application
 But first things first, let's build the application. 
-
-You can adjust `main.DataDir` to whatever directory you want to use, but for the following examples you should compile it with the default directory or a path pointing to a copy of the default directory. Be aware that relative paths are relative to your current work directory, not the location of the executable!
 ```sh
-CGO_ENABLED=0 go build -ldflags "-X main.DataDir=$(pwd)/example/data/" -o gsg example/main.go
+CGO_ENABLED=0 go build -o gsg app/gsg/main.go
+
+# run it once, so the data directory is created
+./gsg
+
+# some of the examples below require data 
+# from the `example/data` directory, 
+# copy it to the data directory
+cp -R example/data/* ~/.rsg-data/
 ```
+Note: you can also make `~/.rsg-data` a symlink to some other location. However, it will be automatically created as a directory upon first run, therefore you would have to create the symlink first.
 
 ### Random Strings
 Let's start with something simple like generating random strings. The token given to the application describes the type (`str`) and the length (e.g. `4`, `8`, `16`, can be anything you want).
@@ -175,7 +117,7 @@ bar
 ### Hashes
 Hashes are also pretty common, let's generate some random ones:
 ```sh
-./gsg [#4] [#8] [#16]
+./gsg '[#4]' '[#8]' '[#16]'
 ```
 ```
 be81
@@ -186,7 +128,7 @@ c4b3da6832290fba
 ### UUIDS
 Need a random UUID? No problem:
 ```sh
-./gsg [#UUID] [#UUID] [#UUID]
+./gsg '[#UUID]' '[#UUID]' '[#UUID]'
 ```
 ```
 cb6c5f1f-3000-42ca-080e1fd9bf3a
@@ -264,7 +206,7 @@ In this example values from the range 100-200 should only show up 1/3 of the tim
 ### Files
 Those among you paying close attention might wonder how recursion can be achieved in the first place. Good catch, time to introduce you to the `[:file]` token. 
 
-Maybe you've noticed that we've set a `DataDir` variable when compiling the example application. That's why: when using the `[:file]` token data is being read from this directory. Well, to be more precise: it is read from memory because when a generator is created the library will load all files from that directory into memory and from then on watch the directory for changes and update the in-memory cache accordingly. This produces overhead for each generator created, so you should reuse them where possible, especially when using large data directories.
+Remember that we copied files before building the application? Here's why: when using the `[:file]` token data is being read from the `$HOME/.rsg-data` directory. Well, to be more precise: it is read from memory because when a generator is created the library will load all files from that directory into memory and from then on watch the directory for changes and update the in-memory cache accordingly. This produces overhead for each generator created, so you should reuse them where possible, especially when using a lot of data.
 
 When loading files into memory the library will remove all blank lines and commented lines. Comments can be created by prefixing a line with `#` and as many leading spaces as you like. However, it is not possible to comment partial lines.
 
@@ -272,8 +214,8 @@ With that out of the way, let's look at how `[:file]` tokens work.
 
 Assume the following directory structure:
 ```
-example
-└─ data
+$HOME
+└─ .rsg-data
    ├─ a
    ├─ b
    │  └─ ull
@@ -283,14 +225,14 @@ example
 
 Let's add some content to the files:
 ```sh
-# example/data/a
+# .rsg-data/a
 hello
 world
 [:b]
 ```
 
 ```sh
-# example/data/b/ull/shit
+# .rsg-data/b/ull/shit
 [:a]:[:a]
 [:a]:[:c]
 [:c]:[:a]
@@ -298,7 +240,7 @@ world
 ```
 
 ```sh
-# example/data/c
+# .rsg-data/c
 foo
 bar
 [:[a,b]]
@@ -324,28 +266,28 @@ If it's a directory (like `[:b]`), the token will select a random file from that
 As you can see files can contain tokens referencing other files. Using this you can abstract complex patterns into a couple of files. Let's take random email addresses as an example. We need a couple of files first:
 
 ```sh
-# example/data/name
+# .rsg-data/name
 info
 no-reply
 hello
 ```
 
 ```sh
-# example/data/domain
+# .rsg-data/domain
 google
 amazon
 ebay
 ```
 
 ```sh
-# example/data/tld
+# .rsg-data/tld
 com
 co.uk
 au
 ```
 
 ```sh
-# example/data/email
+# .rsg-data/email
 [:name]@[:domain].[:tld]
 ```
 
@@ -363,4 +305,4 @@ no-reply@amazon.co.uk
 ### Recursion
 Didn't you see it? Hint: tokens can be nested, also `[:file]` tokens.
 
-The library does not keep track of recursion depth, so creating the file `example/data/recursion` with `[:recursion]` as content and then running `./gsg [:recursion]` would crash your machine real quick. As a safeguard, you should have at least one case in each data file that does not lead to recursion.
+The library does not keep track of recursion depth, so creating the file `.rsg-data/recursion` with `[:recursion]` as content and then running `./gsg [:recursion]` would crash your machine real quick. As a safeguard, you should have at least one case in each data file that does not lead to recursion.
