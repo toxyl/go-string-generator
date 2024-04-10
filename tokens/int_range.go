@@ -12,5 +12,5 @@ type TokenIntRange struct {
 }
 
 func (t *TokenIntRange) Parse() string {
-	return fmt.Sprintf("%d", utils.GetRandomInt(t.Min, t.Max))
+	return fmt.Sprint(utils.GetRandomInt(t.Min, t.Max))
 }

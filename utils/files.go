@@ -1,10 +1,9 @@
 package utils
 
 import (
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 // DirExists reports whether the dir exists as a boolean,
@@ -54,7 +53,7 @@ func CopyFile(src, dst string) error {
 }
 
 func ReadFile(filename string) ([]byte, error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -63,14 +62,14 @@ func ReadFile(filename string) ([]byte, error) {
 
 func ListFiles(directory string) []string {
 	files := []string{}
-	fs, err := ioutil.ReadDir(directory)
+	fs, err := os.ReadDir(directory)
 	if err == nil {
 		for _, file := range fs {
 			if file.IsDir() {
-				files = append(files, ListFiles(fmt.Sprintf("%s/%s", directory, file.Name()))...)
+				files = append(files, ListFiles(filepath.Join(directory, file.Name()))...)
 				continue
 			}
-			files = append(files, fmt.Sprintf("%s/%s", directory, file.Name()))
+			files = append(files, filepath.Join(directory, file.Name()))
 		}
 	}
 	return files

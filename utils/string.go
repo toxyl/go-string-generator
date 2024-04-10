@@ -10,8 +10,7 @@ func GetRandomStringFromList(strings ...string) string {
 	if len(strings) <= 0 {
 		return ""
 	}
-	var i int = GetRandomInt(0, len(strings)-1)
-	return strings[i]
+	return strings[GetRandomInt(0, len(strings)-1)]
 }
 
 func GetRandomString(chars string, length int) string {
@@ -20,7 +19,6 @@ func GetRandomString(chars string, length int) string {
 	for i := 0; i < length; i++ {
 		b.WriteByte(chars[GetRandomInt(0, l)])
 	}
-
 	return b.String()
 }
 

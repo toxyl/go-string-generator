@@ -1,18 +1,16 @@
 package utils
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
-	"time"
 )
 
 func GetRandomInt(min, max int) int {
-	rand.Seed(time.Now().UnixNano())
 	n := max - min + 1
 	if n <= 0 {
 		return min
 	}
-	return rand.Intn(n) + min
+	return rand.IntN(n) + min
 }
 
 func IntFromString(str string, def int) int {

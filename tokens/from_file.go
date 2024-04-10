@@ -1,7 +1,6 @@
 package tokens
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/toxyl/go-string-generator/utils"
@@ -14,7 +13,7 @@ type TokenLineFromFile struct {
 }
 
 func (t *TokenLineFromFile) Parse(dataDir string) string {
-	path, err := filepath.Rel(dataDir, fmt.Sprintf("%s/%s", dataDir, t.File))
+	path, err := filepath.Rel(dataDir, filepath.Join(dataDir, t.File))
 	if err != nil {
 		return "" // silently ignore
 	}
@@ -22,5 +21,5 @@ func (t *TokenLineFromFile) Parse(dataDir string) string {
 		return ""
 	}
 
-	return FilesCache.GetRandomLineFromFile(fmt.Sprintf("%s/%s", dataDir, path))
+	return FilesCache.GetRandomLineFromFile(filepath.Join(dataDir, path))
 }

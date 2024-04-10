@@ -14,8 +14,8 @@ import (
 )
 
 var reRandHash *regexp.Regexp = regexp.MustCompile(`#\d+`)
-var reRandInt *regexp.Regexp = regexp.MustCompile(`\d+-\d+`)
-var reIntRange *regexp.Regexp = regexp.MustCompile(`\d+\.\.\d+`)
+var reRandInt *regexp.Regexp = regexp.MustCompile(`\[\d+-\d+\]`)
+var reIntRange *regexp.Regexp = regexp.MustCompile(`\[\d+\.\.\d+\]`)
 var reRandStr *regexp.Regexp = regexp.MustCompile(`(.+?,)+([^,]+)`)
 
 const (
