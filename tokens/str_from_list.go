@@ -1,6 +1,8 @@
 package tokens
 
-import "github.com/toxyl/go-string-generator/utils"
+import (
+	"github.com/toxyl/go-string-generator/utils"
+)
 
 type TokenStrFromList struct {
 	Strings []string

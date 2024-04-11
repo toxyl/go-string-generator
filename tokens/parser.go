@@ -96,7 +96,9 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 	if pattern[len(pattern)-1:] != " " {
 		pattern += " " // fixes a case where the end of the string is not correctly returned
 	}
+	buf := make([]byte, len(pattern))
 	s := bufio.NewScanner(strings.NewReader(pattern))
+	s.Buffer(buf, len(pattern))
 
 	s.Split(rsg.token)
 	tokens := []interface{}{}
