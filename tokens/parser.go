@@ -2,7 +2,10 @@ package tokens
 
 import (
 	"bufio"
+	"encoding/ascii85"
+	"encoding/base32"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
@@ -19,21 +22,34 @@ var reIntRange *regexp.Regexp = regexp.MustCompile(`\[\d+\.\.\d+\]`)
 var reRandStr *regexp.Regexp = regexp.MustCompile(`(.+?,)+([^,]+)`)
 
 const (
-	TOKEN_START              = "["
-	TOKEN_END                = "]"
-	TOKEN_TYPE_STR           = "str"
-	TOKEN_TYPE_STR_L         = TOKEN_TYPE_STR + ":"
-	TOKEN_TYPE_STR_U         = TOKEN_TYPE_STR + "U:"
-	TOKEN_TYPE_STR_R         = TOKEN_TYPE_STR + "R:"
-	TOKEN_TYPE_ALPHA         = "mix"
-	TOKEN_TYPE_ALPHA_L       = TOKEN_TYPE_ALPHA + ":"
-	TOKEN_TYPE_ALPHA_U       = TOKEN_TYPE_ALPHA + "U:"
-	TOKEN_TYPE_ALPHA_R       = TOKEN_TYPE_ALPHA + "R:"
-	TOKEN_TYPE_INT           = "int:"
-	TOKEN_TYPE_UUID          = "#UUID"
-	TOKEN_TYPE_BASE64_ENCODE = "b64:"
-	TOKEN_TYPE_URL_ENCODE    = "url:"
-	TOKEN_TYPE_FROM_FILE     = ":"
+	TOKEN_START               = "["
+	TOKEN_END                 = "]"
+	TOKEN_TYPE_STR            = "str"
+	TOKEN_TYPE_STR_L          = TOKEN_TYPE_STR + ":"
+	TOKEN_TYPE_STR_U          = TOKEN_TYPE_STR + "U:"
+	TOKEN_TYPE_STR_R          = TOKEN_TYPE_STR + "R:"
+	TOKEN_TYPE_STR_SHORT      = "s"
+	TOKEN_TYPE_STR_SHORT_L    = TOKEN_TYPE_STR_SHORT + ":"
+	TOKEN_TYPE_STR_SHORT_U    = TOKEN_TYPE_STR_SHORT + "U:"
+	TOKEN_TYPE_STR_SHORT_R    = TOKEN_TYPE_STR_SHORT + "R:"
+	TOKEN_TYPE_ALPHA          = "mix"
+	TOKEN_TYPE_ALPHA_L        = TOKEN_TYPE_ALPHA + ":"
+	TOKEN_TYPE_ALPHA_U        = TOKEN_TYPE_ALPHA + "U:"
+	TOKEN_TYPE_ALPHA_R        = TOKEN_TYPE_ALPHA + "R:"
+	TOKEN_TYPE_ALPHA_SHORT    = "m"
+	TOKEN_TYPE_ALPHA_SHORT_L  = TOKEN_TYPE_ALPHA_SHORT + ":"
+	TOKEN_TYPE_ALPHA_SHORT_U  = TOKEN_TYPE_ALPHA_SHORT + "U:"
+	TOKEN_TYPE_ALPHA_SHORT_R  = TOKEN_TYPE_ALPHA_SHORT + "R:"
+	TOKEN_TYPE_INT            = "int:"
+	TOKEN_TYPE_INT_SHORT      = "i:"
+	TOKEN_TYPE_UUID           = "#UUID"
+	TOKEN_TYPE_BASE64_ENCODE  = "b64:"
+	TOKEN_TYPE_BASE32_ENCODE  = "b32:"
+	TOKEN_TYPE_ASCII85_ENCODE = "a85:"
+	TOKEN_TYPE_BINARY_ENCODE  = "bin:"
+	TOKEN_TYPE_URL_ENCODE     = "url:"
+	TOKEN_TYPE_HEX_ENCODE     = "hex:"
+	TOKEN_TYPE_FROM_FILE      = ":"
 )
 
 type Token string
@@ -141,6 +157,40 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 				}
 			}
 
+			if l >= 2 && t[1:2] == TOKEN_TYPE_STR_SHORT {
+				if t[1:3] == TOKEN_TYPE_STR_SHORT_L {
+					tokens = append(tokens, TokenStrLower{Length: utils.IntFromString(t[3:l], 0)})
+					continue
+				}
+
+				if t[1:4] == TOKEN_TYPE_STR_SHORT_U {
+					tokens = append(tokens, TokenStrUpper{Length: utils.IntFromString(t[4:l], 0)})
+					continue
+				}
+
+				if t[1:4] == TOKEN_TYPE_STR_SHORT_R {
+					tokens = append(tokens, TokenStr{Length: utils.IntFromString(t[4:l], 0)})
+					continue
+				}
+			}
+
+			if l >= 2 && t[1:2] == TOKEN_TYPE_ALPHA_SHORT {
+				if t[1:3] == TOKEN_TYPE_ALPHA_SHORT_L {
+					tokens = append(tokens, TokenMixLower{Length: utils.IntFromString(t[3:l], 0)})
+					continue
+				}
+
+				if t[1:4] == TOKEN_TYPE_ALPHA_SHORT_U {
+					tokens = append(tokens, TokenMixUpper{Length: utils.IntFromString(t[4:l], 0)})
+					continue
+				}
+
+				if t[1:4] == TOKEN_TYPE_ALPHA_SHORT_R {
+					tokens = append(tokens, TokenMix{Length: utils.IntFromString(t[4:l], 0)})
+					continue
+				}
+			}
+
 			if l >= 2 && t[1:2] == "#" {
 				if l >= 6 && t[1:6] == TOKEN_TYPE_UUID {
 					tokens = append(tokens, TokenRandomUUID(""))
@@ -155,6 +205,11 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 
 			if l >= 6 && t[1:5] == TOKEN_TYPE_INT {
 				tokens = append(tokens, TokenInt{Length: utils.IntFromString(t[5:l], 0)})
+				continue
+			}
+
+			if l >= 4 && t[1:3] == TOKEN_TYPE_INT_SHORT {
+				tokens = append(tokens, TokenInt{Length: utils.IntFromString(t[3:l], 0)})
 				continue
 			}
 
@@ -179,8 +234,7 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 
 			if l >= 6 {
 				if t[1:5] == TOKEN_TYPE_BASE64_ENCODE {
-					b64 := base64.URLEncoding.EncodeToString([]byte(t[5:l]))
-					tokens = append(tokens, Token(b64))
+					tokens = append(tokens, Token(base64.URLEncoding.EncodeToString([]byte(t[5:l]))))
 					continue
 				}
 
@@ -188,6 +242,29 @@ func (rsg *RandomStringGenerator) tokenize(pattern string) []interface{} {
 					tokens = append(tokens, Token(url.QueryEscape(t[5:l])))
 					continue
 				}
+
+				if t[1:5] == TOKEN_TYPE_HEX_ENCODE {
+					hexEncoded := hex.EncodeToString([]byte(t[5:l]))
+					tokens = append(tokens, Token(hexEncoded))
+				}
+
+				if t[1:5] == TOKEN_TYPE_BASE32_ENCODE {
+					tokens = append(tokens, Token(base32.StdEncoding.EncodeToString([]byte(t[5:l]))))
+					continue
+				}
+
+				if t[1:5] == TOKEN_TYPE_BINARY_ENCODE {
+					tokens = append(tokens, Token(utils.BinaryEncode(t[5:l])))
+					continue
+				}
+
+				if t[1:5] == TOKEN_TYPE_ASCII85_ENCODE {
+					ascii85Encoded := make([]byte, ascii85.MaxEncodedLen(len(t[5:l])))
+					ascii85Len := ascii85.Encode(ascii85Encoded, []byte(t[5:l]))
+					tokens = append(tokens, Token(string(ascii85Encoded[:ascii85Len])))
+					continue
+				}
+
 			}
 
 			if reRandStr.MatchString(t) {
